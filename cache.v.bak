@@ -170,7 +170,7 @@ module controlUnitCache_tb;
 
   // Clock generation: 10ns period
   initial clk = 0;
-  always #50 clk = ~clk;
+  always #5 clk = ~clk;
 
   integer cycle_count;
   integer op_count;
@@ -179,7 +179,7 @@ module controlUnitCache_tb;
   initial begin
     // Initialize inputs
     rst_b = 0;
-    cin = 2'b00;
+    cin = 4'b0000;
     cycle_count = 0;
     op_count = 0;
 
