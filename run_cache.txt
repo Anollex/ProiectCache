@@ -2,7 +2,7 @@
 set sourcefiles {cache.v}
 
 # set name of the top module
-set topmodule controlUnitCache_tb
+set topmodule cache_controller_tb
 
 ###################################################
 #####DO NOT MODIFY THE SCRIPT BELLOW THIS LINE#####

@@ -1,0 +1,216 @@
+# Reading D:/modelsim/tcl/vsim/pref.tcl 
+# OpenFile D:/CTI/ProiectCache/cache.v 
+do run_cache.txt
+# cache.v
+# cache_controller_tb
+# Model Technology ModelSim ALTERA vlog 6.5b Compiler 2009.10 Oct  1 2009
+# -- Compiling module cache_controller
+# -- Compiling module cache_controller_tb
+# 
+# Top level modules:
+# 	cache_controller_tb
+# vsim -voptargs=+acc cache_controller_tb 
+# Loading work.cache_controller_tb
+# Loading work.cache_controller
+# ** Warning: (vsim-WLF-5000) WLF file currently in use: vsim.wlf
+#           File in use by: ericr  Hostname: DESKTOP-FN21SOR  ProcessID: 2108
+#           Attempting to use alternate WLF file "./wlft7xctzk".
+# ** Warning: (vsim-WLF-5001) Could not open WLF file: vsim.wlf
+#           Using alternate file: ./wlft7xctzk
+# Time: 5 | Input change -> read_write=0, hit_miss=0
+# Time: 5 | State:       IDLE
+# Time: 25 | Input change -> read_write=1, hit_miss=0
+# Time: 35 | State:  TAG_CHECK
+# Time: 45 | State:     WR_HIT
+# Time: 55 | State:     UPDATE
+# Time: 65 | State:   RESPONSE
+# Time: 75 | State:       IDLE
+# Time: 115 | State:  TAG_CHECK
+# Time: 125 | State:     WR_HIT
+# Time: 135 | State:     UPDATE
+# Time: 145 | State:   RESPONSE
+# Time: 155 | State:       IDLE
+# Time: 185 | Input change -> read_write=0, hit_miss=0
+# Time: 195 | State:  TAG_CHECK
+# Time: 205 | State:     RD_HIT
+# Time: 215 | State:   RESPONSE
+# Time: 225 | State:       IDLE
+# Time: 275 | State:  TAG_CHECK
+# Time: 285 | State:     RD_HIT
+# Time: 295 | State:   RESPONSE
+# Time: 305 | State:       IDLE
+# Time: 355 | State:  TAG_CHECK
+# Time: 365 | State:     RD_HIT
+# Time: 375 | State:   RESPONSE
+# Time: 385 | State:       IDLE
+# Time: 435 | State:  TAG_CHECK
+# Time: 445 | State:     RD_HIT
+# Time: 455 | State:   RESPONSE
+# Time: 465 | State:       IDLE
+# Time: 505 | Input change -> read_write=1, hit_miss=0
+# Time: 515 | State:  TAG_CHECK
+# Time: 525 | State:     WR_HIT
+# Time: 535 | State:     UPDATE
+# Time: 545 | State:   RESPONSE
+# Time: 555 | State:       IDLE
+# Time: 585 | Input change -> read_write=0, hit_miss=0
+# Time: 595 | State:  TAG_CHECK
+# Time: 605 | State:     RD_HIT
+# Time: 615 | State:   RESPONSE
+# Time: 625 | State:       IDLE
+# Time: 665 | Input change -> read_write=1, hit_miss=0
+# Time: 675 | State:  TAG_CHECK
+# Time: 685 | State:     WR_HIT
+# Time: 695 | State:     UPDATE
+# Time: 705 | State:   RESPONSE
+# Time: 715 | State:       IDLE
+# Time: 745 | Input change -> read_write=0, hit_miss=0
+# Time: 755 | State:  TAG_CHECK
+# Time: 765 | State:     RD_HIT
+# Time: 775 | State:   RESPONSE
+# Time: 785 | State:       IDLE
+# Time: 825 | Input change -> read_write=1, hit_miss=0
+# Time: 835 | State:  TAG_CHECK
+# Time: 845 | State:     WR_HIT
+# Time: 855 | State:     UPDATE
+# Time: 865 | State:   RESPONSE
+# Time: 875 | State:       IDLE
+# Time: 915 | State:  TAG_CHECK
+# Time: 925 | State:     WR_HIT
+# Time: 935 | State:     UPDATE
+# Time: 945 | State:   RESPONSE
+# Time: 955 | State:       IDLE
+# Time: 985 | Input change -> read_write=0, hit_miss=0
+# Time: 995 | State:  TAG_CHECK
+# Time: 1005 | State:     RD_HIT
+# Time: 1015 | State:   RESPONSE
+# Time: 1025 | State:       IDLE
+# Time: 1075 | State:  TAG_CHECK
+# Time: 1085 | State:     RD_HIT
+# Time: 1095 | State:   RESPONSE
+# Time: 1105 | State:       IDLE
+# Time: 1145 | Input change -> read_write=1, hit_miss=0
+# Time: 1155 | State:  TAG_CHECK
+# Time: 1165 | State:     WR_HIT
+# Time: 1175 | State:     UPDATE
+# Time: 1185 | State:   RESPONSE
+# Time: 1195 | State:       IDLE
+# Time: 1225 | Input change -> read_write=0, hit_miss=0
+# Time: 1235 | State:  TAG_CHECK
+# Time: 1245 | State:     RD_HIT
+# Time: 1255 | State:   RESPONSE
+# Time: 1265 | State:       IDLE
+# Time: 1305 | Input change -> read_write=1, hit_miss=0
+# Time: 1315 | State:  TAG_CHECK
+# Time: 1325 | State:     WR_HIT
+# Time: 1335 | State:     UPDATE
+# Time: 1345 | State:   RESPONSE
+# Time: 1355 | State:       IDLE
+# Time: 1395 | State:  TAG_CHECK
+# Time: 1405 | State:     WR_HIT
+# Time: 1415 | State:     UPDATE
+# Time: 1425 | State:   RESPONSE
+# Time: 1435 | State:       IDLE
+# Time: 1465 | Input change -> read_write=0, hit_miss=0
+# Time: 1475 | State:  TAG_CHECK
+# Time: 1485 | State:     RD_HIT
+# Time: 1495 | State:   RESPONSE
+# Time: 1505 | State:       IDLE
+# Time: 1545 | Input change -> read_write=1, hit_miss=1
+# Time: 1555 | State:  TAG_CHECK
+# Time: 1565 | State:      EVICT
+# Time: 1575 | State:    WR_MISS
+# Time: 1585 | State:     UPDATE
+# Time: 1595 | State:   RESPONSE
+# Time: 1605 | State:       IDLE
+# Time: 1625 | Input change -> read_write=1, hit_miss=0
+# Time: 1635 | State:  TAG_CHECK
+# Time: 1645 | State:     WR_HIT
+# Time: 1655 | State:     UPDATE
+# Time: 1665 | State:   RESPONSE
+# Time: 1675 | State:       IDLE
+# Time: 1715 | State:  TAG_CHECK
+# Time: 1725 | State:     WR_HIT
+# Time: 1735 | State:     UPDATE
+# Time: 1745 | State:   RESPONSE
+# Time: 1755 | State:       IDLE
+# Time: 1795 | State:  TAG_CHECK
+# Time: 1805 | State:     WR_HIT
+# Time: 1815 | State:     UPDATE
+# Time: 1825 | State:   RESPONSE
+# Time: 1835 | State:       IDLE
+# Time: 1875 | State:  TAG_CHECK
+# Time: 1885 | State:     WR_HIT
+# Time: 1895 | State:     UPDATE
+# Time: 1905 | State:   RESPONSE
+# Time: 1915 | State:       IDLE
+# Time: 1955 | State:  TAG_CHECK
+# Time: 1965 | State:     WR_HIT
+# Time: 1975 | State:     UPDATE
+# Time: 1985 | State:   RESPONSE
+# Time: 1995 | State:       IDLE
+# Time: 2025 | Input change -> read_write=0, hit_miss=0
+# Time: 2035 | State:  TAG_CHECK
+# Time: 2045 | State:     RD_HIT
+# Time: 2055 | State:   RESPONSE
+# Time: 2065 | State:       IDLE
+# Time: 2105 | Input change -> read_write=1, hit_miss=0
+# Time: 2115 | State:  TAG_CHECK
+# Time: 2125 | State:     WR_HIT
+# Time: 2135 | State:     UPDATE
+# Time: 2145 | State:   RESPONSE
+# Time: 2155 | State:       IDLE
+# Time: 2185 | Input change -> read_write=0, hit_miss=0
+# Time: 2195 | State:  TAG_CHECK
+# Time: 2205 | State:     RD_HIT
+# Time: 2215 | State:   RESPONSE
+# Time: 2225 | State:       IDLE
+# Time: 2265 | Input change -> read_write=1, hit_miss=0
+# Time: 2275 | State:  TAG_CHECK
+# Time: 2285 | State:     WR_HIT
+# Time: 2295 | State:     UPDATE
+# Time: 2305 | State:   RESPONSE
+# Time: 2315 | State:       IDLE
+# Time: 2355 | State:  TAG_CHECK
+# Time: 2365 | State:     WR_HIT
+# Time: 2375 | State:     UPDATE
+# Time: 2385 | State:   RESPONSE
+# Time: 2395 | State:       IDLE
+# Time: 2425 | Input change -> read_write=0, hit_miss=0
+# Time: 2435 | State:  TAG_CHECK
+# Time: 2445 | State:     RD_HIT
+# Time: 2455 | State:   RESPONSE
+# Time: 2465 | State:       IDLE
+# Time: 2505 | Input change -> read_write=1, hit_miss=0
+# Time: 2515 | State:  TAG_CHECK
+# Time: 2525 | State:     WR_HIT
+# Time: 2535 | State:     UPDATE
+# Time: 2545 | State:   RESPONSE
+# Time: 2555 | State:       IDLE
+# Time: 2595 | State:  TAG_CHECK
+# Time: 2605 | State:     WR_HIT
+# Time: 2615 | State:     UPDATE
+# Time: 2625 | State:   RESPONSE
+# Time: 2635 | State:       IDLE
+# Time: 2665 | Input change -> read_write=0, hit_miss=0
+# Time: 2675 | State:  TAG_CHECK
+# Time: 2685 | State:     RD_HIT
+# Time: 2695 | State:   RESPONSE
+# Time: 2705 | State:       IDLE
+# Time: 2755 | State:  TAG_CHECK
+# Time: 2765 | State:     RD_HIT
+# Time: 2775 | State:   RESPONSE
+# Time: 2785 | State:       IDLE
+# Time: 2825 | Input change -> read_write=1, hit_miss=0
+# Time: 2835 | State:  TAG_CHECK
+# Time: 2845 | State:     WR_HIT
+# Time: 2855 | State:     UPDATE
+# Time: 2865 | State:   RESPONSE
+# Time: 2875 | State:       IDLE
+# Time: 2905 | Input change -> read_write=0, hit_miss=0
+# Time: 2915 | State:  TAG_CHECK
+# Time: 2925 | State:     RD_HIT
+# Time: 2935 | State:   RESPONSE
+# Time: 2945 | State:       IDLE
+# Time: 2995 | State:  TAG_CHECK
+quit -sim

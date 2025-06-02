@@ -1,225 +1,291 @@
-module controlUnitCache(
-  input clk,
-  input rst_b,
-  input wire [1:0] cin,
-  output reg [1:0] cout
+module cache_controller (
+    input clk,
+    input rst,
+    input start,
+    input read_write,
+    input hit_miss,
+    output [3:0] state_out
 );
 
-  localparam
-    IDLE      = 4'd0,
-    TAG_CHECK = 4'd1,
-    RD_HIT    = 4'd2,
-    WT_HIT    = 4'd3,
-    RD_MISS   = 4'd4,
-    WT_MISS   = 4'd5,
-    EVICT     = 4'd6,
-    UPDATE    = 4'd7,
-    RESPONSE  = 4'd8;
+    localparam
+        IDLE      = 4'd0,
+        TAG_CHECK = 4'd1,
+        RD_HIT    = 4'd2,
+        WR_HIT    = 4'd3,
+        EVICT     = 4'd4,
+        WR_MISS   = 4'd5,
+        RD_MISS   = 4'd6,
+        UPDATE    = 4'd7,
+        RESPONSE  = 4'd8;
 
-  reg [3:0] state, next_state;
+    reg[3:0] current_state, next_state;
 
-  reg [3:0] data [3:0];    // data[i]: [valid(3)][dirty(2)][timer(1:0)]
-  reg [2:0] pos;
-  reg [1:0] evicted_index;
-
-  integer i;
-
-  function [2:0] biasedRandom;
-    input dummy;
-    integer rand;
-    begin
-      rand = $urandom % 100;
-      if (rand < 98)
-        biasedRandom = $urandom % 4;
-      else
-        biasedRandom = 3'd4;
-    end
-  endfunction
-
-  function [1:0] findEvict;
-    input dummy;
-    begin
-      findEvict = 0;
-      for (i = 1; i < 4; i = i + 1) begin
-        // Evict line with largest timer (LRU)
-        if (data[i][1:0] > data[findEvict][1:0])
-          findEvict = i;
-      end
-    end
-  endfunction
-
-  task updateTimer;
-    input [1:0] position;
-    begin
-      for (i = 0; i < 4; i = i + 1) begin
-        if (i != position && data[i][1:0] < 2'd3)
-          data[i][1:0] = data[i][1:0] + 1;
-      end
-      data[position][1:0] = 2'd0;
-    end
-  endtask
-
-  task putFirst;
-    input [1:0] position;
-    begin
-      for (i = 0; i < 4; i = i + 1) begin
-        if (data[i][1:0] < data[position][1:0])
-          data[i][1:0] = data[i][1:0] + 1;
-      end
-      data[position][1:0] = 2'd0;
-    end
-  endtask
-
-  always @(*) begin
-    next_state = state;
-    case (state)
-      IDLE: begin
-        if (cin[0])
-          next_state = TAG_CHECK;
-          cout[1] = 0;
-        end
-
-      TAG_CHECK: begin
-        if (pos == 3'd4) begin
-          next_state = EVICT;
-          cout = 1;
-        end else begin
-          if (data[pos][3] == 1'b1) begin
-            cout[0] = 0;
-            casez ({cin[1], cout[0]})
-              1'b0: next_state = RD_HIT;
-              1'b1: next_state = WT_HIT;
-              default: next_state = IDLE;
-            endcase
-          end else begin
-            next_state = (cin[1] == 1'b1) ? WT_MISS : RD_MISS;
-            cout[0] = 1;
-          end
-        end
-      end
-
-      RD_HIT:   next_state = RESPONSE;
-      WT_HIT:   next_state = UPDATE;
-      RD_MISS:  next_state = RESPONSE;
-      WT_MISS:  next_state = UPDATE;
-      UPDATE:   next_state = RESPONSE;
-      RESPONSE: next_state = IDLE;
-
-      EVICT: begin
-        if (cout[0] == 1'b0)
-          next_state = RD_MISS;
+    always @(posedge clk or posedge rst) begin
+        if (rst)
+            current_state <= IDLE;
         else
-          next_state = WT_MISS;
-      end
+            current_state <= next_state;
+    end
+
+    always @(*)begin
+        next_state = current_state;
+        case (current_state)
+            IDLE: begin
+                if (start)
+                    next_state = TAG_CHECK;
+            end
+            TAG_CHECK: begin
+                if (!hit_miss && !read_write)
+                    next_state = RD_HIT;
+                else if (!hit_miss && read_write)
+                    next_state = WR_HIT;
+                else
+                    next_state = EVICT;
+            end
+            RD_HIT:    next_state = RESPONSE;
+            WR_HIT:    next_state = UPDATE;
+            EVICT:     next_state = (read_write ? WR_MISS : RD_MISS);
+            WR_MISS:   next_state = UPDATE;
+            RD_MISS:   next_state = UPDATE;
+            UPDATE:    next_state = RESPONSE;
+            RESPONSE:  next_state = IDLE;
+            default:   next_state = IDLE;
+        endcase
+    end
+
+    assign state_out = current_state;
+
+endmodule  
+  
+  module cache_controller_tb;
+
+    reg clk;
+    reg rst;
+    reg start;
+    reg read_write;
+    reg hit_miss;
+    wire [3:0] state_out;
+
+    cache_controller uut (
+        .clk(clk),
+        .rst(rst),
+        .start(start),
+        .read_write(read_write),
+        .hit_miss(hit_miss),
+        .state_out(state_out)
+    );
+
+    always #5 clk = ~clk;
+    
+    function automatic get_hit_miss;
+      input dump;
+    begin
+        get_hit_miss = ($urandom_range(0, 99) < 98) ? 0 : 1;
+    end
+endfunction
+
+    integer i;
+initial begin
+
+    clk = 0;
+    rst = 1;
+    start = 0;
+    read_write = 0;
+    hit_miss = 0;
+    #10 rst = 0;
+
+    for (i = 0; i < 50; i = i + 1) begin
+        #10;
+        start = 1;
+        read_write = $urandom % 2;
+        hit_miss = get_hit_miss(1);
+        #10;
+        start = 0;
+        #60;
+    end
+end
+    
+  reg prev_start, prev_rw, prev_hitmiss;
+  reg [3:0] prev_state;
+
+always @(posedge clk) begin
+    if (read_write !== prev_rw || hit_miss !== prev_hitmiss) begin
+        $display("Time: %0t | Input change -> read_write=%b, hit_miss=%b",
+                 $time, read_write, hit_miss);
+        prev_start   <= start;
+        prev_rw      <= read_write;
+        prev_hitmiss <= hit_miss;
+    end
+end
+
+always @(posedge clk) begin
+    if (state_out !== prev_state) begin
+        $display("Time: %0t | State: %s",
+                 $time, state_name(state_out));
+        prev_state <= state_out;
+    end
+end
+
+function [8*10:1] state_name;
+    input [3:0] state;
+    case (state)
+        4'd0:  state_name = "IDLE";
+        4'd1:  state_name = "TAG_CHECK";
+        4'd2:  state_name = "RD_HIT";
+        4'd3:  state_name = "WR_HIT";
+            {module cache_controller (
+            input clk,
+            input rst,
+            input start,
+            input read_write,
+            input hit_miss,
+            output [3:0] state_out
+        );
+        
+            localparam
+                IDLE      = 4'd0,
+                TAG_CHECK = 4'd1,
+                RD_HIT    = 4'd2,
+                WR_HIT    = 4'd3,
+                EVICT     = 4'd4,
+                WR_MISS   = 4'd5,
+                RD_MISS   = 4'd6,
+                UPDATE    = 4'd7,
+                RESPONSE  = 4'd8;
+        
+            reg[3:0] current_state, next_state;
+        
+            always @(posedge clk or posedge rst) begin
+                if (rst)
+                    current_state <= IDLE;
+                else
+                    current_state <= next_state;
+            end
+        
+            always @(*)begin
+                next_state = current_state;
+                case (current_state)
+                    IDLE: begin
+                        if (start)
+                            next_state = TAG_CHECK;
+                    end
+                    TAG_CHECK: begin
+                        if (!hit_miss && !read_write)
+                            next_state = RD_HIT;
+                        else if (!hit_miss && read_write)
+                            next_state = WR_HIT;
+                        else
+                            next_state = EVICT;
+                    end
+                    RD_HIT:    next_state = RESPONSE;
+                    WR_HIT:    next_state = UPDATE;
+                    EVICT:     next_state = (read_write ? WR_MISS : RD_MISS);
+                    WR_MISS:   next_state = UPDATE;
+                    RD_MISS:   next_state = UPDATE;
+                    UPDATE:    next_state = RESPONSE;
+                    RESPONSE:  next_state = IDLE;
+                    default:   next_state = IDLE;
+                endcase
+            end
+        
+            assign state_out = current_state;
+        
+        endmodule  
+          
+          module cache_controller_tb;
+        
+            reg clk;
+            reg rst;
+            reg start;
+            reg read_write;
+            reg hit_miss;
+            wire [3:0] state_out;
+        
+            cache_controller uut (
+                .clk(clk),
+                .rst(rst),
+                .start(start),
+                .read_write(read_write),
+                .hit_miss(hit_miss),
+                .state_out(state_out)
+            );
+        
+            always #5 clk = ~clk;
+            
+            function automatic get_hit_miss;
+              input dump;
+            begin
+                get_hit_miss = ($urandom_range(0, 99) < 98) ? 0 : 1;
+            end
+        endfunction
+        
+            integer i;
+        initial begin
+        
+            clk = 0;
+            rst = 1;
+            start = 0;
+            read_write = 0;
+            hit_miss = 0;
+            #10 rst = 0;
+        
+            for (i = 0; i < 50; i = i + 1) begin
+                #10;
+                start = 1;
+                read_write = $urandom % 2;
+                hit_miss = get_hit_miss(1);
+                #10;
+                start = 0;
+                #60;
+            end
+        end
+            
+          reg prev_start, prev_rw, prev_hitmiss;
+          reg [3:0] prev_state;
+        
+        always @(posedge clk) begin
+            if (read_write !== prev_rw || hit_miss !== prev_hitmiss) begin
+                $display("Time: %0t | Input change -> read_write=%b, hit_miss=%b",
+                         $time, read_write, hit_miss);
+                prev_start   <= start;
+                prev_rw      <= read_write;
+                prev_hitmiss <= hit_miss;
+            end
+        end
+        
+        always @(posedge clk) begin
+            if (state_out !== prev_state) begin
+                $display("Time: %0t | State: %s",
+                         $time, state_name(state_out));
+                prev_state <= state_out;
+            end
+        end
+        
+        function [8*10:1] state_name;
+            input [3:0] state;
+            case (state)
+                4'd0:  state_name = "IDLE";
+                4'd1:  state_name = "TAG_CHECK";
+                4'd2:  state_name = "RD_HIT";
+                4'd3:  state_name = "WR_HIT";
+                4'd4:  state_name = "EVICT";
+                4'd5:  state_name = "WR_MISS";
+                4'd6:  state_name = "RD_MISS";
+                4'd7:  state_name = "UPDATE";
+                4'd8:  state_name = "RESPONSE";
+                default: state_name = "UNKNOWN";
+            endcase
+        endfunction
+        
+        
+        endmodule}    4'd4:  state_name = "EVICT";
+        4'd5:  state_name = "WR_MISS";
+        4'd6:  state_name = "RD_MISS";
+        4'd7:  state_name = "UPDATE";
+        4'd8:  state_name = "RESPONSE";
+        default: state_name = "UNKNOWN";
     endcase
-  end
+endfunction
 
-  always @(posedge clk, negedge rst_b) begin
-    if (!rst_b) begin
-      state <= IDLE;
-      for (i = 0; i < 4; i = i + 1)
-        data[i] <= 4'b0000;  // valid=0, dirty=0, timer=0
-    end else begin
-      state <= next_state;
-
-      case (state)
-        TAG_CHECK: begin
-          cout[1] = 1;
-          pos <= biasedRandom(1);
-          if (pos == 3'd4) begin
-            evicted_index <= findEvict(0);
-          end else begin
-            data[pos][3] <= 1'b1;      // valid
-            data[pos][2] <= 1'b0;      // dirty cleared
-            putFirst(pos[1:0]);
-          end
-        end
-
-        EVICT: begin
-          if (pos == 3'd4) begin
-            updateTimer(evicted_index);
-            data[evicted_index][3] <= 1'b0;
-            data[evicted_index][2] <= 1'b0;
-          end
-        end
-
-        WT_HIT, WT_MISS, UPDATE: begin
-          data[pos][2] <= 1'b1;
-        end
-      endcase
-    end
-  end
-
-endmodule
-
-
-module controlUnitCache_tb;
-
-  reg clk;
-  reg rst_b;
-  reg [1:0] cin;
-  wire [1:0] cout;
-
-  // Instantiate the cache controller
-  controlUnitCache uut (
-    .clk(clk),
-    .rst_b(rst_b),
-    .cin(cin),
-    .cout(cout)
-  );
-
-  // Clock generation: 10ns period
-  initial clk = 0;
-  always #50 clk = ~clk;
-
-  integer cycle_count;
-  integer op_count;
-  integer rand_val;
-
-  initial begin
-    // Initialize inputs
-    rst_b = 0;
-    cin = 2'b00;
-    cycle_count = 0;
-    op_count = 0;
-
-    // Release reset after 20 ns
-    #20 rst_b = 1;
-
-    // Run 100 valid operations
-    while (op_count < 100 && !cout[1]) begin
-
-      // Randomly decide if we start a new operation
-      rand_val = $urandom % 100;
-      $display("random1:%d\n",rand_val);
-
-      if (rand_val < 50) begin
-        // 50% chance to start an operation
-        // Random read/write with ~66% reads, 34% writes
-        rand_val = $urandom % 100;
-        $display("random2:%d\n",rand_val);
-        if (rand_val < 66) begin
-          // Read operation
-          cin[1] = 1'b0;
-        end else begin
-          // Write operation
-          cin[1] = 1'b1;
-        end
-
-        cin[0] = 1'b1;  // Trigger new operation
-
-        op_count = op_count + 1;
-      end else begin
-        // No new operation this cycle
-        cin[0] = 1'b0;
-      end
-
-      // Display current state info for debug
-      $display("Cycle %0d: cin=%b, state=%0d, pos=%0d, valid/dirty/timer (line0)=%b", 
-               op_count, cin, uut.state, uut.pos, uut.data[0]);
-
-      
-    end
-  end
 
 endmodule
