@@ -87,6 +87,7 @@ module cache_controller(
     always @(posedge clk) begin
       
         case (current_state)
+            IDLE: hit_out <= 0;
             TAG_CHECK: begin
                 hit = 0;
                 for (i = 0; i < 4; i = i + 1) begin
@@ -154,9 +155,10 @@ module cache_controller_tb;
 
     always #5 clk = ~clk;
 
-    integer i;
-    reg [7:0] tag_seq [0:49];
+    integer i, k;
+    reg [3:0] tag_seq [0:49];
     initial begin
+        k = 0;
         clk = 0;
         rst = 1;
         start = 0;
@@ -179,9 +181,9 @@ module cache_controller_tb;
             repeat (6) @(posedge clk);
             dump_cache();
         end
-
-        #100 $finish;
     end
+    
+    always@(posedge hit_out) k = k + 1;
 
     reg [3:0] prev_state;
     always @(posedge clk) begin
