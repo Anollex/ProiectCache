@@ -86,7 +86,6 @@ module cache_controller(
 
     always @(posedge clk) begin
       
-      
         case (current_state)
             TAG_CHECK: begin
                 hit = 0;
@@ -153,7 +152,6 @@ module cache_controller_tb;
         .hit_out(hit_out)
     );
 
-    // Clock generation
     always #5 clk = ~clk;
 
     integer i;
@@ -166,12 +164,10 @@ module cache_controller_tb;
         tag_in = 0;
         #20 rst = 0;
 
-        // Generate test tag sequence within a realistic set-associative tag space (simulate 128 sets)
         for (i = 0; i < 50; i = i + 1) begin
-            tag_seq[i] = { $urandom_range(0, 7), $urandom_range(0, 15) }; // 3 MSBs as index, 5 LSBs as tag
+            tag_seq[i] = { $urandom_range(0, 7), $urandom_range(0, 15) };
         end
 
-        // Apply test sequence
         for (i = 0; i < 50; i = i + 1) begin
             @(posedge clk);
             start = 1;
@@ -187,7 +183,6 @@ module cache_controller_tb;
         #100 $finish;
     end
 
-    // Monitor state transitions
     reg [3:0] prev_state;
     always @(posedge clk) begin
         if (state_out !== prev_state) begin
@@ -196,7 +191,6 @@ module cache_controller_tb;
         end
     end
 
-    // Translate state number to string
     function [8*12:1] state_name;
         input [3:0] state;
         case (state)
@@ -213,7 +207,6 @@ module cache_controller_tb;
         endcase
     endfunction
 
-    // Cache state dump with visualization
     task dump_cache;
         integer j;
         begin
