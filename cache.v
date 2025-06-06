@@ -1,10 +1,11 @@
-module cache_controller (
+module cache_controller(
     input clk,
     input rst,
     input start,
     input read_write,
-    input hit_miss,
-    output [3:0] state_out
+    input [7:0] tag_in,
+    output reg [3:0] state_out,
+    output reg hit_out
 );
 
     localparam
@@ -18,16 +19,30 @@ module cache_controller (
         UPDATE    = 4'd7,
         RESPONSE  = 4'd8;
 
-    reg[3:0] current_state, next_state;
+    reg [3:0] current_state, next_state;
+    reg [7:0] tag_array [3:0];
+    reg [1:0] age [3:0];
+    reg valid [3:0];
+    reg dirty [3:0];
+    integer i;
+    integer lru_index;
+    reg hit;
 
     always @(posedge clk or posedge rst) begin
-        if (rst)
+        if (rst) begin
             current_state <= IDLE;
-        else
+            for (i = 0; i < 4; i = i + 1) begin
+                tag_array[i] <= 8'd0;
+                age[i] <= i;
+                valid[i] <= 0;
+                dirty[i] <= 0;
+            end
+        end else begin
             current_state <= next_state;
+        end
     end
 
-    always @(*)begin
+    always @(*) begin
         next_state = current_state;
         case (current_state)
             IDLE: begin
@@ -35,9 +50,14 @@ module cache_controller (
                     next_state = TAG_CHECK;
             end
             TAG_CHECK: begin
-                if (!hit_miss && !read_write)
+                hit = 0;
+                for (i = 0; i < 4; i = i + 1) begin
+                    if (valid[i] && tag_array[i] == tag_in)
+                        hit = 1;
+                end
+                if (hit && !read_write)
                     next_state = RD_HIT;
-                else if (!hit_miss && read_write)
+                else if (hit && read_write)
                     next_state = WR_HIT;
                 else
                     next_state = EVICT;
@@ -52,100 +72,164 @@ module cache_controller (
             default:   next_state = IDLE;
         endcase
     end
+    
+    function integer find_index;
+        input [7:0] tag_val;
+        begin
+        find_index = -1;
+        for (i = 0; i < 4; i = i + 1)
+            if (valid[i] && tag_array[i] == tag_val)
+                find_index = i;
+        end
+    endfunction
 
-    assign state_out = current_state;
 
-endmodule  
-  
-  module cache_controller_tb;
+    always @(posedge clk) begin
+      
+      
+        case (current_state)
+            TAG_CHECK: begin
+                hit = 0;
+                for (i = 0; i < 4; i = i + 1) begin
+                    if (valid[i] && tag_array[i] == tag_in) begin
+                        hit = 1;
+                        age[i] <= 0;
+                    end else if (valid[i]) begin
+                        age[i] <= age[i] + 1;
+                    end
+                end
+                hit_out <= hit;
+            end
+            UPDATE: begin
+                if (hit) begin
+                    for (i = 0; i < 4; i = i + 1) begin
+                        if (valid[i] && tag_array[i] == tag_in) begin
+                            dirty[i] <= read_write;
+                            age[i] <= 0;
+                        end else if (valid[i] && age[i] < age[find_index(tag_in)]) begin
+                            age[i] <= age[i] + 1;
+                        end
+                    end
+            end else begin
+                lru_index = 0;
+                for (i = 1; i < 4; i = i + 1)
+                    if (age[i] > age[lru_index])
+                        lru_index = i;
+
+                tag_array[lru_index] <= tag_in;
+                valid[lru_index] <= 1;
+                dirty[lru_index] <= read_write;
+                age[lru_index] <= 0;
+
+                for (i = 0; i < 4; i = i + 1)
+                    if (i != lru_index && valid[i])
+                        age[i] <= age[i] + 1;
+            end
+        end
+
+        endcase
+        state_out <= current_state;
+    end
+endmodule
+
+
+module cache_controller_tb;
 
     reg clk;
     reg rst;
     reg start;
     reg read_write;
-    reg hit_miss;
+    reg [7:0] tag_in;
     wire [3:0] state_out;
+    wire hit_out;
 
-    // Instantiate the DUT (Device Under Test)
     cache_controller uut (
         .clk(clk),
         .rst(rst),
         .start(start),
         .read_write(read_write),
-        .hit_miss(hit_miss),
-        .state_out(state_out)
+        .tag_in(tag_in),
+        .state_out(state_out),
+        .hit_out(hit_out)
     );
 
+    // Clock generation
     always #5 clk = ~clk;
-    
-    function automatic get_hit_miss;
-      input dump;
-    begin
-        // Use a random number from 0 to 99
-        // Return 1 (miss) only if the number is 98 or 99
-        get_hit_miss = ($urandom_range(0, 99) < 98) ? 0 : 1;
-    end
-endfunction
 
     integer i;
-initial begin
-
-    clk = 0;
-    rst = 1;
-    start = 0;
-    read_write = 0;
-    hit_miss = 0;
-    #10 rst = 0;
-
-    for (i = 0; i < 50; i = i + 1) begin
-        #10;
-        start = 1;
-        read_write = $urandom % 2;
-        hit_miss = get_hit_miss(1);
-        #10;
+    reg [7:0] tag_seq [0:49];
+    initial begin
+        clk = 0;
+        rst = 1;
         start = 0;
-        #60;
+        read_write = 0;
+        tag_in = 0;
+        #20 rst = 0;
+
+        // Generate test tag sequence within a realistic set-associative tag space (simulate 128 sets)
+        for (i = 0; i < 50; i = i + 1) begin
+            tag_seq[i] = { $urandom_range(0, 7), $urandom_range(0, 15) }; // 3 MSBs as index, 5 LSBs as tag
+        end
+
+        // Apply test sequence
+        for (i = 0; i < 50; i = i + 1) begin
+            @(posedge clk);
+            start = 1;
+            tag_in = tag_seq[i];
+            read_write = $urandom % 2;
+            $display("[%0t] Start access #%0d | RW=%0d | Tag=0x%h", $time, i, read_write, tag_in);
+            @(posedge clk);
+            start = 0;
+            repeat (6) @(posedge clk);
+            dump_cache();
+        end
+
+        #100 $finish;
     end
-end
-    
-    // Monitor FSM state and inputs on state change
-  reg prev_start, prev_rw, prev_hitmiss;
-  reg [3:0] prev_state;
 
-always @(posedge clk) begin
-    if (read_write !== prev_rw || hit_miss !== prev_hitmiss) begin
-        $display("Time: %0t | Input change -> read_write=%b, hit_miss=%b",
-                 $time, read_write, hit_miss);
-        prev_start   <= start;
-        prev_rw      <= read_write;
-        prev_hitmiss <= hit_miss;
+    // Monitor state transitions
+    reg [3:0] prev_state;
+    always @(posedge clk) begin
+        if (state_out !== prev_state) begin
+            $display("[%0t] State changed: %s", $time, state_name(state_out));
+            prev_state <= state_out;
+        end
     end
-end
 
-always @(posedge clk) begin
-    if (state_out !== prev_state) begin
-        $display("Time: %0t | State: %s",
-                 $time, state_name(state_out));
-        prev_state <= state_out;
-    end
-end
+    // Translate state number to string
+    function [8*12:1] state_name;
+        input [3:0] state;
+        case (state)
+            4'd0: state_name = "IDLE";
+            4'd1: state_name = "TAG_CHECK";
+            4'd2: state_name = "RD_HIT";
+            4'd3: state_name = "WR_HIT";
+            4'd4: state_name = "EVICT";
+            4'd5: state_name = "WR_MISS";
+            4'd6: state_name = "RD_MISS";
+            4'd7: state_name = "UPDATE";
+            4'd8: state_name = "RESPONSE";
+            default: state_name = "UNKNOWN";
+        endcase
+    endfunction
 
-// Function to convert state number to name
-function [8*10:1] state_name;
-    input [3:0] state;
-    case (state)
-        4'd0:  state_name = "IDLE";
-        4'd1:  state_name = "TAG_CHECK";
-        4'd2:  state_name = "RD_HIT";
-        4'd3:  state_name = "WR_HIT";
-        4'd4:  state_name = "EVICT";
-        4'd5:  state_name = "WR_MISS";
-        4'd6:  state_name = "RD_MISS";
-        4'd7:  state_name = "UPDATE";
-        4'd8:  state_name = "RESPONSE";
-        default: state_name = "UNKNOWN";
-    endcase
-endfunction
-
+    // Cache state dump with visualization
+    task dump_cache;
+        integer j;
+        begin
+            $display("[%0t] Cache Dump:", $time);
+            for (j = 0; j < 4; j = j + 1) begin
+                $display("  Line %0d | Valid: %0d | Dirty: %0d | Age: %0d | Tag: 0x%h %s",
+                    j,
+                    uut.valid[j],
+                    uut.dirty[j],
+                    uut.age[j],
+                    uut.tag_array[j],
+                    (uut.age[j] == 2'b11) ? "<-- LRU" : "");
+            end
+        end
+    endtask
 
 endmodule
+
+
